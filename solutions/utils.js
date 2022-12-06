@@ -1,10 +1,33 @@
 import fs from 'fs'
 import path from 'path'
 import callsite from 'callsite'
+import assert from 'assert'
 
-export const readFile = (inputFileName) => {
+export const getFileP = (inputFileName) => {
   const stack = callsite()
   const requester = stack[1].getFileName()
   const finalPath = path.join(path.dirname(requester), inputFileName).substring(5)
-  return fs.readFileSync(finalPath, 'utf8').split('\n')
+  return finalPath
+}
+
+export const readFileFromFullPath = (fullPath) => fs.readFileSync(fullPath, 'utf8').split('\n')
+
+export const readFile = (inputFileName) => {
+  return fs.readFileSync(getFileP(inputFileName), 'utf8').split('\n')
+}
+
+export const assertTest = (fullPath, targetFunc, expectedVal) => {
+  it(`${targetFunc.name} should return ${expectedVal}`, function () {
+    const inputArr = readFileFromFullPath(fullPath)
+    assert.equal(targetFunc(inputArr), expectedVal)
+  })
+}
+
+export const assertSolution = (fullPath, targetFunc) => {
+  it('input should return', function () {
+    const inputArr = readFileFromFullPath(fullPath)
+    const actualAns = targetFunc(inputArr)
+    console.log('predictedAnswer:', actualAns)
+    assert.ok(actualAns)
+  })
 }
