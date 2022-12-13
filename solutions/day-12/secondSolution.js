@@ -1,25 +1,50 @@
-import { structMonkeys } from './utils.js'
-
+import { structStepGraph } from './utils.js'
+const getIndex = (k, lc) => {
+  const [i, j] = k.split('_').map(n => +n)
+  return i * lc + j
+}
 export default (arr) => {
-  const monkeys = structMonkeys(arr)
-  const monkeyItems = {}
-  const ekok = monkeys.reduce((e, m) => m.divisable * e, 1)
-  for (let r = 0; r < 10000; r++) {
-    for (let i = 0; i < monkeys.length; i++) {
-      const monkey = monkeys[i]
-      while (monkey.items?.length) {
-        monkeyItems[i] = (monkeyItems[i] || 0) + 1
-        let item = monkey.items.shift()
-        item = monkey.operation(item) % ekok
-        if ((item % monkey.divisable) === 0) {
-          monkeys[monkey.pTarget].items.push(item)
-        } else {
-          monkeys[monkey.nTarget].items.push(item)
+  const [stepGraph, , end] = structStepGraph(arr)
+
+  const offset = arr[0].length
+
+  const maxSteps = offset * arr.length
+  let minSteps = maxSteps
+  const bfs = (src, dest) => {
+    const dist = []
+    const visited = []
+    let queue = []
+
+    visited[getIndex(src, offset)] = true
+    dist[getIndex(src, offset)] = 0
+    queue.push(src)
+    let foundDist
+    while (queue.length) {
+      const nodeKey = queue.shift()
+      const node = stepGraph[nodeKey]
+      for (let i = 0; i < node.adj.length; i++) {
+        const adjKey = node.adj[i]
+        if (!visited[getIndex(adjKey, offset)]) {
+          visited[getIndex(adjKey, offset)] = true
+          dist[getIndex(adjKey, offset)] = (dist[getIndex(nodeKey, offset)] || 0) + 1
+          queue.push(adjKey)
+
+          if (adjKey === dest) {
+            queue = []
+            foundDist = (dist[getIndex(nodeKey, offset)] || 0) + 1
+            break
+          }
         }
       }
     }
+    return foundDist || maxSteps
   }
-  const x = Object.values(monkeyItems)
-  x.sort((a, b) => b - a)
-  return x[0] * x[1]
+
+  Object.keys(stepGraph).map(nodeKey => {
+    if (stepGraph[nodeKey].val === 1) {
+      minSteps = Math.min(minSteps, bfs(nodeKey, end))
+    }
+  })
+
+  return minSteps
 }
