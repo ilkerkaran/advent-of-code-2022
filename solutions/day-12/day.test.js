@@ -14,4 +14,16 @@ describe(`${dayName}-second`, function () {
   const func = second
   assertTest(getFileP('testinput0'), func, 29)
   assertSolution(getFileP('input'), func)
+  assertSolution(getFileP('input1'), func)
+})
+
+describe(`${dayName}-t0`, function () {
+  this.timeout(20000)
+  const func = second
+  assertSolution(getFileP('input'), func)
+})
+describe(`${dayName}-t1`, function () {
+  this.timeout(20000)
+  const func = second
+  assertSolution(getFileP('input1'), func)
 })
