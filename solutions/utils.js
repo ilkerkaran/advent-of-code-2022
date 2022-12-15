@@ -16,17 +16,17 @@ export const readFile = (inputFileName) => {
   return fs.readFileSync(getFileP(inputFileName), 'utf8').split('\n')
 }
 
-export const assertTest = (fullPath, targetFunc, expectedVal) => {
+export const assertTest = (fullPath, targetFunc, expectedVal, additionalArgs = []) => {
   it(`${targetFunc.name} should return ${expectedVal}`, function () {
     const inputArr = readFileFromFullPath(fullPath)
-    assert.equal(targetFunc(inputArr), expectedVal)
+    assert.equal(targetFunc(inputArr, ...additionalArgs), expectedVal)
   })
 }
 
-export const assertSolution = (fullPath, targetFunc) => {
+export const assertSolution = (fullPath, targetFunc, additionalArgs = []) => {
   it('input should return', function () {
     const inputArr = readFileFromFullPath(fullPath)
-    const actualAns = targetFunc(inputArr)
+    const actualAns = targetFunc(inputArr, ...additionalArgs)
     console.log('predictedAnswer:', actualAns)
     assert.ok(actualAns)
   })
