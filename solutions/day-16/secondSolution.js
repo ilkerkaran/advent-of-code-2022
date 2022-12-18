@@ -1,78 +1,117 @@
-import { structSensors } from './utils.js'
 
-export default (arr, limitation) => {
-  const [, sensors] = structSensors(arr)
+import { structData } from './utils.js'
 
-  const unscannedTiles = []
+export default (arr) => {
+  const weighedGraph = structData(arr)
+  const initialRemainingTime = 26
 
-  for (let i = 0; i <= limitation; i++) {
-    unscannedTiles.push([[0, limitation]])
+  const me = {
+    name: 'me',
+    remainingDistance: 0,
+    location: 'AA',
+    ready: true
   }
 
-  const mergeScannedRange = (y, fromX, toX) => {
+  const e = {
+    name: 'elephant',
+    remainingDistance: 0,
+    location: 'AA',
+    ready: false
+  }
+  let result = 0
+  const resultPath = ['', '']
+  const visited = {}
+  let pathIterationCounter = 0
+  let iterationCounter = 0
+  console.time('time passed')
+  const forwardTime = (actor1, actor2, visited, remainingTime, forwardedTime, carryP, actor1Path, actor2Path) => {
+    iterationCounter++
+    if (iterationCounter % (1000 * 1000) === 0) {
+      console.timeLog('time passed')
+      console.log(iterationCounter, 'th iteration')
+    }
+    visited[actor1.location] = true
+    visited[actor2.location] = true
+    remainingTime -= forwardedTime
 
-    const targetRow = unscannedTiles[y]
-    const s = []
-    const e = []
-    const q = []
-    const newRanges = []
-    for (let i = 0; i < targetRow?.length || 0; i++) {
-      const [f, t] = targetRow[i]
-      if (f === fromX && t === toX) {
-        continue
-      } else if (t < fromX) {
-        s.push([f, t])
-      } else if (f > toX) {
-        e.push([f, t])
-      } else {
-        q.push([f, t])
+    processActor(actor1, forwardedTime)
+    processActor(actor2, forwardedTime)
+
+    let nextActor1s = []
+    let nextActor2s = []
+    let a1Stop, a2Stop
+
+    if (actor1.stop) {
+      nextActor1s.push({ ...actor1 })
+    } else if (actor1.ready) {
+      const valve = weighedGraph[actor1.location]
+      carryP += (valve.rate * (remainingTime))
+      actor1Path += remainingTime + ':' + actor1.location + '-'
+      nextActor1s = Object.entries(valve.adj).filter(([name, dist]) => !visited[name] && (remainingTime - dist) >= 0).map(([name, dist]) => {
+        const newActor1 = { ...actor1, location: name, remainingDistance: dist, ready: false }
+        return newActor1
+      })
+      if (!nextActor1s.length) {
+        a1Stop = true
+        nextActor1s.push({ ...actor1, stop: true })
+      }
+    } else {
+      nextActor1s.push({ ...actor1 })
+    }
+
+    if (actor2.stop) {
+      nextActor2s.push({ ...actor2 })
+    } else if (actor2.ready) {
+      const valve = weighedGraph[actor2.location]
+      carryP += (valve.rate * (remainingTime))
+      actor2Path += remainingTime + ':' + actor2.location + '-'
+      nextActor2s = Object.entries(valve.adj).filter(([name, dist]) => !visited[name] && (remainingTime - dist) >= 0).map(([name, dist]) => {
+        const newActor2 = { ...actor2, location: name, remainingDistance: dist, ready: false }
+        return newActor2
+      })
+      if (!nextActor2s.length) {
+        a2Stop = true
+        nextActor2s.push({ ...actor2, stop: true })
+      }
+    } else {
+      nextActor2s.push({ ...actor2 })
+    }
+
+    if (remainingTime <= 0 || ((a1Stop && actor2.stop) || (a2Stop && actor1.stop))) {
+      if (carryP > result) {
+        resultPath[0] = actor1Path
+        resultPath[1] = actor2Path
+      }
+      result = Math.max(result, carryP)
+      pathIterationCounter++
+      return
+    }
+    for (let i = 0; i < nextActor1s.length; i++) {
+      const a1 = { ...nextActor1s[i] }
+      for (let j = 0; j < nextActor2s.length; j++) {
+        const a2 = { ...nextActor2s[j] }
+
+        if (a1.location === a2.location) {
+          continue
+        }
+        const timeLeap = Math.min(a1.stop ? Number.MAX_SAFE_INTEGER : a1.remainingDistance, a2.stop ? Number.MAX_SAFE_INTEGER : a2.remainingDistance)
+
+        forwardTime({ ...a1 }, { ...a2 }, { ...visited }, remainingTime, timeLeap, carryP, actor1Path, actor2Path)
       }
     }
-      // solve q
-      if (q.length) {
-        const [leftFrom] = q[0]
-        const [, rightTo] = q[q.length - 1]
-        if (leftFrom < fromX) {
-          newRanges.push([leftFrom, fromX - 1])
-        }
-        if (rightTo > toX) {
-          newRanges.push([toX + 1, rightTo])
-        }
-       
+  }
+
+  const processActor = (actor, forwardedTime) => {
+    if (!actor.stop) {
+      actor.remainingDistance -= forwardedTime
+      if (!actor.remainingDistance && !actor.ready) {
+        actor.ready = true
       }
-      const newRowRange = [...s, newRanges, ...e].filter(x =>x && x.length)
-      // restruct target row unscanned tiles
-      unscannedTiles[y] = newRowRange.length ? [...s, ...newRanges, ...e] : undefined
-
-
-    
-  }
-
-  const printUnscannedTiles = (...args) => {
-    console.log(...args)
-    for (let i = 0; i < unscannedTiles.length; i++) {
-      const element = unscannedTiles[i];
-      console.log(`row-${i}`, element)
     }
   }
 
-  for (let i = 0; i < sensors.length; i++) {
-    const s = sensors[i]
-    const [x, y] = s.coor
-    const topY = Math.max(0, y - s.dist)
-    const bottomY = Math.min(y + s.dist, limitation)
-    // start removing scanned tiles from top to bottom from unscannedTiles
-    for (let curY = topY; curY <= bottomY; curY++) {  
-        const yDist = Math.abs(y - curY)
-        const xOffset = Math.abs(s.dist - yDist)
-        const fromX = Math.max(0, x - xOffset)
-        const toX = Math.min(x + xOffset, limitation)
-        mergeScannedRange(curY, fromX, toX)     
-    }
-  }
-  for (let i = 0; i < unscannedTiles.length; i++) {
-    const row = unscannedTiles[i];
-    if(row)
-    return 4000000 * row[0][0]+ i 
-  }
+  forwardTime(me, e, visited, initialRemainingTime, 0, 0, '', '')
+  console.log(pathIterationCounter, resultPath)
+  console.timeEnd('time passed')
+  return result
 }

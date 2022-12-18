@@ -7,11 +7,9 @@ export default (arr) => {
   const [stepGraph, , end] = structStepGraph(arr)
 
   const offset = arr[0].length
-  let runCount = 0
   const maxSteps = offset * arr.length
   let minSteps = maxSteps
   const bfs = (src, dest) => {
-    runCount++
     const dist = []
     const visited = []
     let queue = []

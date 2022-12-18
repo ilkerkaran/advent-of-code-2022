@@ -6,12 +6,12 @@ const dayName = 'day16'
 
 describe(`${dayName}-first`, function () {
   const func = first
-  assertTest(getFileP('testinput0'), func, 26)
-  // assertSolution(getFileP('input'), func)
+  assertTest(getFileP('testinput0'), func, 1651)
+  assertSolution(getFileP('input'), func)
 })
 
 describe(`${dayName}-second`, function () {
   const func = second
-   assertTest(getFileP('testinput0'), func, 56000011, [20])
-   assertSolution(getFileP('input'), func,[4000000])
+  assertTest(getFileP('testinput0'), func, 1707)
+  assertSolution(getFileP('input'), func)
 })
